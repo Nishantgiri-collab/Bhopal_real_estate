@@ -127,7 +127,7 @@ const AddProperty = () => {
         navigate('/admin-dashboard');
       }, 1800);
     } catch {
-      setSubmitError('Property could not be saved. Please make sure the backend server is running on port 5000.');
+      setSubmitError('Property could not be saved. Please make sure the backend server is running.');
     } finally {
       setIsSubmitting(false);
     }

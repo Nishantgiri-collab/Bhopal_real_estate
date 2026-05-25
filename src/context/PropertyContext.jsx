@@ -4,7 +4,7 @@ const PropertyContext = createContext();
 
 export const useProperties = () => useContext(PropertyContext);
 
-const API = 'http://localhost:5000/api';
+const API = '/api';
 
 export const PropertyProvider = ({ children }) => {
   const [properties, setProperties] = useState([]);
@@ -20,11 +20,11 @@ export const PropertyProvider = ({ children }) => {
         const data = await res.json();
         setProperties(data);
       } else {
-        setError('Failed to load properties from SQLite.');
+        setError('Failed to load properties.');
         console.error('Failed to fetch properties from server');
       }
     } catch (err) {
-      setError('Cannot connect to the property API. Start the backend server on port 5000.');
+      setError('Cannot connect to the property API. Please make sure the server is running.');
       console.error('Error fetching properties:', err);
     } finally {
       setLoading(false);

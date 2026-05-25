@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['swear-confound-remember.ngrok-free.dev']
+    allowedHosts: ['swear-confound-remember.ngrok-free.dev'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      }
+    }
   }
 })

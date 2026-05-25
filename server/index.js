@@ -597,6 +597,22 @@ app.post('/api/verify-otp/email', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SERVE STATIC FILES (PRODUCTION)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const frontendDistPath = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(frontendDistPath)) {
+  console.log(`📦 Serving static frontend files from: ${frontendDistPath}`);
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res) => {
+    if (req.originalUrl.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // START SERVER
 // ═══════════════════════════════════════════════════════════════════════════════
 

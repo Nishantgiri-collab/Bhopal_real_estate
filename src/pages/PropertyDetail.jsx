@@ -10,7 +10,7 @@ import { useProperties } from '../context/PropertyContext';
 import { useAuth } from '../context/AuthContext';
 import './PropertyDetail.css';
 
-const API = 'http://localhost:5000/api';
+const API = '/api';
 
 // ─── OTP Input: 6 individual digit boxes ──────────────────────────────────────
 const OTPInput = ({ value, onChange, disabled }) => {
