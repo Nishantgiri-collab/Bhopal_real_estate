@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "npm run build & node server.js",
+    "start": "npm run build && node server.js",
     "dev": "vite",
-    "build": "vite build",
+    "build": "cd client && npm run build && cd ..",
+    "postinstall": "cd server && npm install && cd ..",
     "lint": "eslint .",
     "preview": "vite preview"
   },
