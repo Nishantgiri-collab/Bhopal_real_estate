@@ -7,7 +7,7 @@
     "start": "npm run build && node server.js",
     "dev": "vite",
     "build": "cd client && npm run build && cd ..",
-    "postinstall": "cd server && npm install && cd ..",
+    "postinstall": "cd server && npm install && cd .. && cd client && npm install && npm run build && cd ..",
     "lint": "eslint .",
     "preview": "vite preview"
   },

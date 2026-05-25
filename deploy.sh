@@ -6,7 +6,7 @@
 echo "🚀 Starting deployment..."
 
 # Navigate to app directory
-cd /home/your_username/public_html/your_app
+cd /home/u864153968/domains/darkgrey-whale-922741.hostingersite.com/nodejs
 
 # Pull latest code
 echo "📥 Pulling from GitHub..."
@@ -23,7 +23,7 @@ npm run build
 
 # Restart application
 echo "🔄 Restarting Node.js app..."
-pm2 restart bhopal-estate || pm2 start server/index.js --name "bhopal-estate"
+pm2 restart bhopal-estate || pm2 start server.js --name "bhopal-estate"
 pm2 save
 
 echo "✅ Deployment complete!"

@@ -17,11 +17,12 @@ app.use(express.json({ limit: '5mb' }));
 
 // ─── Serve Frontend Build (React dist folder) ─────────────────────────────────
 const searchPaths = [
+  path.join(__dirname, 'dist'),
+  path.join(process.cwd(), 'server', 'dist'),
   path.join(__dirname, '..', 'dist'),
   path.join(__dirname, '..', 'client', 'dist'),
   path.join(process.cwd(), 'dist'),
   path.join(process.cwd(), 'client', 'dist'),
-  path.join(__dirname, 'dist'),
 ];
 const frontendDistPath = searchPaths.find((candidate) => fs.existsSync(candidate));
 
@@ -684,6 +685,12 @@ if (frontendDistPath) {
 } else {
   app.get('*', (req, res) => {
     res.status(404).json({ error: 'Not found' });
+  });
+}
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is now listening on port ${PORT}`);
   });
 }
 
