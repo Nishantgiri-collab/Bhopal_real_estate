@@ -16,12 +16,19 @@ app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 
 // ─── Serve Frontend Build (React dist folder) ─────────────────────────────────
-const frontendDistPath = path.join(__dirname, '..', 'dist');
-if (fs.existsSync(frontendDistPath)) {
+const frontendDistCandidates = [
+  path.join(__dirname, '..', 'dist'),
+  path.join(__dirname, '..', 'client', 'dist')
+];
+const frontendDistPath = frontendDistCandidates.find((candidate) => fs.existsSync(candidate));
+
+if (frontendDistPath) {
   app.use(express.static(frontendDistPath));
   console.log(`✅ Frontend serving enabled from: ${frontendDistPath}`);
 } else {
-  console.warn(`⚠️  Frontend dist folder not found at: ${frontendDistPath}`);
+  console.warn(
+    `⚠️  Frontend dist folder not found. Checked paths:\n  - ${frontendDistCandidates.join('\n  - ')}`
+  );
 }
 
 // ─── Database Connection & Initialization ───────────────────────────────────
@@ -327,11 +334,15 @@ function verifyOTP(key, inputOtp) {
 // ─── Twilio Client ────────────────────────────────────────────────────────────
 let twilioClient = null;
 try {
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_ACCOUNT_SID !== 'your_twilio_account_sid_here') {
-    twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  const twilioSid = (process.env.TWILIO_ACCOUNT_SID || '').trim();
+  const twilioAuth = (process.env.TWILIO_AUTH_TOKEN || '').trim();
+  const accountSidValid = /^AC[0-9a-fA-F]{32}$/.test(twilioSid);
+
+  if (accountSidValid && twilioAuth) {
+    twilioClient = twilio(twilioSid, twilioAuth);
     console.log('✅ Twilio client initialized');
   } else {
-    console.warn('⚠️  Twilio credentials not set — SMS/WhatsApp will run in mock mode');
+    console.warn('⚠️  Twilio credentials not set or invalid — SMS/WhatsApp will run in mock mode');
   }
 } catch (err) {
   console.error('❌ Twilio init error:', err.message);
@@ -370,19 +381,6 @@ process.on('unhandledRejection', (reason, promise) => {
   log(`Unhandled Rejection: ${reason}`);
 });
 
-// ─── SPA Fallback Route ──────────────────────────────────────────────────────
-// Serve index.html for all unknown routes (for React Router)
-app.get('*', (req, res) => {
-  const indexPath = path.join(frontendDistPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).json({ error: 'Not found' });
-  }
-});
-
-// Export app - server.js will handle the listening
-module.exports = app;
 } catch (err) {
   console.error('❌ Nodemailer init error:', err.message);
 }
@@ -664,3 +662,16 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+// ─── SPA Fallback Route ──────────────────────────────────────────────────────
+// Serve index.html for all unknown routes (for React Router)
+app.get('*', (req, res) => {
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+module.exports = app;
