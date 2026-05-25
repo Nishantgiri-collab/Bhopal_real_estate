@@ -16,18 +16,24 @@ app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 
 // ─── Serve Frontend Build (React dist folder) ─────────────────────────────────
-const frontendDistCandidates = [
+const searchPaths = [
   path.join(__dirname, '..', 'dist'),
-  path.join(__dirname, '..', 'client', 'dist')
+  path.join(__dirname, '..', 'client', 'dist'),
+  path.join(process.cwd(), 'dist'),
+  path.join(process.cwd(), 'client', 'dist'),
+  path.join(__dirname, 'dist'),
 ];
-const frontendDistPath = frontendDistCandidates.find((candidate) => fs.existsSync(candidate));
+const frontendDistPath = searchPaths.find((candidate) => fs.existsSync(candidate));
 
 if (frontendDistPath) {
   app.use(express.static(frontendDistPath));
   console.log(`✅ Frontend serving enabled from: ${frontendDistPath}`);
 } else {
   console.warn(
-    `⚠️  Frontend dist folder not found. Checked paths:\n  - ${frontendDistCandidates.join('\n  - ')}`
+    `⚠️  Frontend dist folder not found. Checked paths:\n` +
+    `  - ${searchPaths.join('\n  - ')}\n` +
+    `  Current working directory: ${process.cwd()}\n` +
+    `  Server dirname: ${__dirname}`
   );
 }
 
