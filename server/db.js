@@ -63,6 +63,11 @@ class SimpleDB {
   }
 
   run(sql, params = [], callback) {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+
     try {
       const compactSql = sql.replace(/\s+/g, ' ').trim();
       dbLog('log', 'Run called', { sql: compactSql.slice(0, 140) });
@@ -177,6 +182,11 @@ class SimpleDB {
   }
 
   all(sql, params = [], callback) {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+
     try {
       const compactSql = sql.replace(/\s+/g, ' ').trim();
       dbLog('log', 'All called', { sql: compactSql.slice(0, 140) });
@@ -222,6 +232,11 @@ class SimpleDB {
   }
 
   get(sql, params = [], callback) {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+
     try {
       const compactSql = sql.replace(/\s+/g, ' ').trim();
       dbLog('log', 'Get called', { sql: compactSql.slice(0, 140), params });

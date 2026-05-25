@@ -24,18 +24,31 @@ Ensure you have [Node.js](https://nodejs.org/) installed (v18 or higher is recom
    npm install
    ```
 
-3. **Start the Development Server:**
+3. **Start the Backend API:**
+   ```bash
+   npm run dev:server
+   ```
+   The API will run at [http://localhost:5000/](http://localhost:5000/).
+
+4. **Start the Frontend Development Server:**
+   Open a second terminal and run:
    ```bash
    npm run dev
    ```
    *The server will start, and the app will be accessible at: [http://localhost:5173/](http://localhost:5173/)*
 
-4. **Build for Production:**
+   If PowerShell blocks `npm` with `npm.ps1 cannot be loaded`, use:
+   ```bash
+   npm.cmd run dev
+   npm.cmd run dev:server
+   ```
+
+5. **Build for Production:**
    ```bash
    npm run build
    ```
 
-5. **Linting:**
+6. **Linting:**
    ```bash
    npm run lint
    ```
@@ -81,4 +94,3 @@ bhopal_real_estate/
 ├── vite.config.js          # Vite custom configuration
 └── README.md               # Project documentation
 ```
-

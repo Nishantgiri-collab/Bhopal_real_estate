@@ -341,6 +341,8 @@ function migrateOwnerRequests() {
   });
 }
 
+initializeDatabase();
+
 // ─── In-memory OTP Store (otpStore[sessionKey] = { otp, expiresAt }) ─────────
 const otpStore = {};
 
