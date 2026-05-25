@@ -467,36 +467,54 @@
 
 /* ── OTP Input Boxes ─────────────────────────────────────────────────────── */
 .otp-boxes {
-  display: flex;
-  gap: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(0.35rem, 2vw, 0.75rem);
   justify-content: center;
+  width: min(100%, 390px);
   margin: 1.5rem 0 1.25rem;
+  align-self: center;
 }
 
 .otp-box {
-  width: 52px;
-  height: 60px;
+  width: 100%;
+  aspect-ratio: 0.88;
+  min-width: 0;
+  max-width: 56px;
+  height: auto;
   border-radius: 12px;
-  border: 2px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
-  color: var(--color-text-primary);
+  border: 2px solid rgba(148, 163, 184, 0.75);
+  background: #f8fafc;
+  color: #0f172a;
   font-size: 1.6rem;
   font-weight: 700;
   text-align: center;
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.2s;
   caret-color: var(--color-primary);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  justify-self: center;
 }
 
 .otp-box:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
-  background: rgba(108, 99, 255, 0.06);
+  box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.25), 0 14px 28px rgba(0, 0, 0, 0.24);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.otp-box:hover:not(:disabled) {
+  border-color: rgba(108, 99, 255, 0.75);
+  background: #ffffff;
+}
+
+.otp-box:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .otp-box.filled {
-  border-color: rgba(108, 99, 255, 0.5);
-  background: rgba(108, 99, 255, 0.08);
+  border-color: rgba(108, 99, 255, 0.8);
+  background: #ffffff;
 }
 
 .otp-box:disabled {
@@ -700,14 +718,13 @@
 
 @media (max-width: 480px) {
   .otp-box {
-    width: 42px;
-    height: 52px;
-    font-size: 1.3rem;
+    max-width: 46px;
+    font-size: 1.25rem;
     border-radius: 10px;
   }
 
   .otp-boxes {
-    gap: 0.4rem;
+    width: 100%;
   }
 
   .modal-content {

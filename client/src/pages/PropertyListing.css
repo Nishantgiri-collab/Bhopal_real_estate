@@ -140,6 +140,20 @@
   border-color: var(--color-primary);
 }
 
+.filter-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.filter-actions .custom-btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+}
+
 .listing-main .properties-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
@@ -164,6 +178,7 @@
     background: var(--color-background);
     border-right: 1px solid var(--color-border);
     padding-top: 5rem;
+    padding-bottom: 1rem;
   }
 
   .filters-sidebar.show {
@@ -182,6 +197,12 @@
 
   .search-bar {
     flex: 1;
+  }
+}
+
+@media (max-width: 380px) {
+  .filter-actions {
+    grid-template-columns: 1fr;
   }
 }
 

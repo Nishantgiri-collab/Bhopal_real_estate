@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Check, Search, SlidersHorizontal, X } from 'lucide-react';
 import Button from '../components/Button';
 import PropertyCard from '../components/PropertyCard';
 import { useProperties } from '../context/PropertyContext';
@@ -29,11 +29,14 @@ const LOCALITIES = [
 
 ];
 
+const DEFAULT_BUDGET_MIN = 10;
+const DEFAULT_BUDGET_MAX = 500;
+
 const PropertyListing = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [budgetMax, setBudgetMax] = useState(500);
-  const [budgetMin, setBudgetMin] = useState(0);
+  const [budgetMax, setBudgetMax] = useState(DEFAULT_BUDGET_MAX);
+  const [budgetMin, setBudgetMin] = useState(DEFAULT_BUDGET_MIN);
   const [selectedBhk, setSelectedBhk] = useState(null);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedListingTypes, setSelectedListingTypes] = useState([]);
@@ -65,15 +68,19 @@ const PropertyListing = () => {
     setSelectedTypes([]);
     setSelectedLocalities([]);
     setSelectedListingTypes([]);
-    setBudgetMin(10);
-    setBudgetMax(500);
+    setBudgetMin(DEFAULT_BUDGET_MIN);
+    setBudgetMax(DEFAULT_BUDGET_MAX);
+  };
+
+  const closeFilters = () => {
+    setShowFilters(false);
   };
 
   const activeFilterCount = (selectedTypes.length > 0 ? 1 : 0) +
     (selectedBhk !== null ? 1 : 0) +
     (selectedLocalities.length > 0 ? 1 : 0) +
     (selectedListingTypes.length > 0 ? 1 : 0) +
-    (budgetMax < 500 ? 1 : 0) + (budgetMin > 10 ? 1 : 0) +
+    (budgetMax < DEFAULT_BUDGET_MAX ? 1 : 0) + (budgetMin > DEFAULT_BUDGET_MIN ? 1 : 0) +
     (searchQuery.trim() !== '' ? 1 : 0);
 
   const filteredProperties = useMemo(() => {
@@ -248,11 +255,14 @@ const PropertyListing = () => {
             </div>
           </div>
 
-          {activeFilterCount > 0 && (
-            <Button variant="outline" fullWidth onClick={clearAllFilters} icon={<X size={16} />}>
+          <div className="filter-actions">
+            <Button variant="outline" onClick={clearAllFilters} icon={<X size={16} />}>
               Clear All Filters
             </Button>
-          )}
+            <Button variant="primary" onClick={closeFilters} icon={<Check size={16} />}>
+              Done
+            </Button>
+          </div>
         </aside>
 
         {/* Property Grid */}
@@ -279,15 +289,15 @@ const PropertyListing = () => {
                   {selectedBhk === 4 ? '4+' : selectedBhk} BHK <button onClick={() => setSelectedBhk(null)}><X size={14} /></button>
                 </span>
               )}
-                {budgetMin > 10 && (
+                {budgetMin > DEFAULT_BUDGET_MIN && (
                   <span className="filter-pill">
                     From ₹{formatBudget(budgetMin)}
-                    <button onClick={() => setBudgetMin(10)}><X size={14} /></button>
+                    <button onClick={() => setBudgetMin(DEFAULT_BUDGET_MIN)}><X size={14} /></button>
                   </span>
                 )}
-              {budgetMax < 500 && (
+              {budgetMax < DEFAULT_BUDGET_MAX && (
                 <span className="filter-pill">
-                  Up to ₹{formatBudget(budgetMax)} <button onClick={() => setBudgetMax(500)}><X size={14} /></button>
+                  Up to ₹{formatBudget(budgetMax)} <button onClick={() => setBudgetMax(DEFAULT_BUDGET_MAX)}><X size={14} /></button>
                 </span>
               )}
               {selectedLocalities.map(loc => (

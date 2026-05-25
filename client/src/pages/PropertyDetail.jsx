@@ -17,6 +17,10 @@ const OTPInput = ({ value, onChange, disabled }) => {
   const inputsRef = useRef([]);
   const digits = value.split('').concat(Array(6).fill('')).slice(0, 6);
 
+  useEffect(() => {
+    if (!disabled) inputsRef.current[0]?.focus();
+  }, [disabled]);
+
   const handleChange = (e, idx) => {
     const val = e.target.value.replace(/\D/g, '');
     if (!val) {
@@ -25,16 +29,31 @@ const OTPInput = ({ value, onChange, disabled }) => {
       onChange(next.join(''));
       return;
     }
-    const char = val[val.length - 1];
     const next = [...digits];
-    next[idx] = char;
+    val.slice(0, 6 - idx).split('').forEach((char, offset) => {
+      next[idx + offset] = char;
+    });
     onChange(next.join(''));
-    if (idx < 5) inputsRef.current[idx + 1]?.focus();
+    const nextIdx = Math.min(idx + val.length, 5);
+    inputsRef.current[nextIdx]?.focus();
   };
 
   const handleKeyDown = (e, idx) => {
-    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
+    if (e.key === 'Backspace') {
+      if (!digits[idx] && idx > 0) {
+        inputsRef.current[idx - 1]?.focus();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowLeft' && idx > 0) {
+      e.preventDefault();
       inputsRef.current[idx - 1]?.focus();
+    }
+
+    if (e.key === 'ArrowRight' && idx < 5) {
+      e.preventDefault();
+      inputsRef.current[idx + 1]?.focus();
     }
   };
 
@@ -42,12 +61,12 @@ const OTPInput = ({ value, onChange, disabled }) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     onChange(pasted.padEnd(6, '').slice(0, 6));
-    const nextIdx = Math.min(pasted.length, 5);
+    const nextIdx = Math.min(Math.max(pasted.length - 1, 0), 5);
     inputsRef.current[nextIdx]?.focus();
   };
 
   return (
-    <div className="otp-boxes">
+    <div className="otp-boxes" role="group" aria-label="Enter 6 digit OTP">
       {digits.map((d, idx) => (
         <input
           key={idx}
@@ -58,9 +77,12 @@ const OTPInput = ({ value, onChange, disabled }) => {
           maxLength={1}
           value={d}
           disabled={disabled}
+          aria-label={`OTP digit ${idx + 1}`}
+          autoFocus={idx === 0}
           onChange={(e) => handleChange(e, idx)}
           onKeyDown={(e) => handleKeyDown(e, idx)}
           onPaste={handlePaste}
+          onFocus={(e) => e.target.select()}
           autoComplete="one-time-code"
         />
       ))}
