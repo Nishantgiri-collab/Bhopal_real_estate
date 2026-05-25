@@ -1,20 +1,4 @@
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Serve static files from dist (after build)
-app.use(express.static(path.join(__dirname, "dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// server.js
+// Root entry point for Hostinger Node.js Web App deployment
+console.log("🚀 Starting Bhopal Real Estate application from root entry point...");
+require("./server/index.js");
