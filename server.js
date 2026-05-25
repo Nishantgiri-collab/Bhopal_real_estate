@@ -1,5 +1,6 @@
 // server.js
 // Root entry point for Hostinger Node.js Web App deployment
+const path = require('path');
 console.log("🚀 Starting Bhopal Real Estate application from root entry point...");
 const frontendDistPath = path.join(__dirname, 'dist');
 require("./server/index.js");
