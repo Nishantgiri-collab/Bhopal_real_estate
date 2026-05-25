@@ -671,13 +671,20 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // ─── SPA Fallback Route ──────────────────────────────────────────────────────
 // Serve index.html for all unknown routes (for React Router)
-app.get('*', (req, res) => {
-  const indexPath = path.join(frontendDistPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
+if (frontendDistPath) {
+  app.get('*', (req, res) => {
+    const indexPath = path.join(frontendDistPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      console.error(`❌ SPA fallback index.html missing at: ${indexPath}`);
+      res.status(404).json({ error: 'Frontend build not found' });
+    }
+  });
+} else {
+  app.get('*', (req, res) => {
     res.status(404).json({ error: 'Not found' });
-  }
-});
+  });
+}
 
 module.exports = app;
