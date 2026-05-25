@@ -29,7 +29,7 @@ const LOCALITIES = [
 
 ];
 
-const DEFAULT_BUDGET_MIN = 10;
+const DEFAULT_BUDGET_MIN = 0;
 const DEFAULT_BUDGET_MAX = 500;
 const RECORDS_PER_PAGE = 12;
 
