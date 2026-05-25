@@ -126,8 +126,18 @@ const AddProperty = () => {
       setTimeout(() => {
         navigate('/admin-dashboard');
       }, 1800);
-    } catch {
-      setSubmitError('Property could not be saved. Please make sure the backend server is running.');
+    } catch (err) {
+      console.error('[add-property-page] Submit failed', { error: err?.message || err });
+      let message = err?.message || 'Property could not be saved. Please make sure the backend server is running.';
+      try {
+        const parsed = JSON.parse(message);
+        message = parsed.requestId
+          ? `${parsed.error || 'Property could not be saved.'} Request ID: ${parsed.requestId}`
+          : parsed.error || message;
+      } catch {
+        // Keep the original message when the response is plain text or a network error.
+      }
+      setSubmitError(message);
     } finally {
       setIsSubmitting(false);
     }

@@ -6,6 +6,14 @@ export const useProperties = () => useContext(PropertyContext);
 
 const API = '/api';
 
+const clientLog = (message, details = {}) => {
+  console.log(`[property-client] ${message}`, details);
+};
+
+const clientError = (message, error, details = {}) => {
+  console.error(`[property-client] ${message}`, { ...details, error: error?.message || error });
+};
+
 export const PropertyProvider = ({ children }) => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,16 +87,30 @@ export const PropertyProvider = ({ children }) => {
   };
 
   const addProperty = async (newProp) => {
+    const traceId = `property-${Date.now()}`;
+    clientLog('Add property started', {
+      traceId,
+      title: newProp.title,
+      imageFiles: newProp.imageFiles?.length || 0
+    });
+
     let persistentImages = [];
     if (newProp.imageFiles && newProp.imageFiles.length > 0) {
       for (let i = 0; i < newProp.imageFiles.length; i++) {
         try {
+          clientLog('Compressing image', {
+            traceId,
+            index: i,
+            name: newProp.imageFiles[i]?.name,
+            size: newProp.imageFiles[i]?.size
+          });
           const compressed = await compressImage(newProp.imageFiles[i]);
           if (compressed) {
             persistentImages.push(compressed);
+            clientLog('Image compressed', { traceId, index: i, outputLength: compressed.length });
           }
         } catch (e) {
-          console.warn('Failed compressing image', i, e);
+          console.warn('[property-client] Failed compressing image', { traceId, index: i, error: e?.message || e });
         }
       }
     }
@@ -110,22 +132,32 @@ export const PropertyProvider = ({ children }) => {
     delete propertyWithId.imageFiles;
 
     try {
+      const body = JSON.stringify(propertyWithId);
+      clientLog('Sending property create request', {
+        traceId,
+        id: propertyWithId.id,
+        bodyBytes: body.length,
+        imageCount: propertyWithId.images?.length || 0
+      });
+
       const res = await fetch(`${API}/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(propertyWithId)
+        body
       });
+      clientLog('Property create response received', { traceId, status: res.status, ok: res.ok });
       if (res.ok) {
         const saved = await res.json();
+        clientLog('Property create succeeded', { traceId, id: saved.id, title: saved.title });
         setProperties(prev => [saved, ...prev]);
         return saved;
       } else {
         const message = await res.text();
-        console.error('Failed to add property to SQLite database');
-        throw new Error(message || 'Failed to add property to SQLite database');
+        clientError('Property create failed', message, { traceId, status: res.status });
+        throw new Error(message || 'Failed to add property to database');
       }
     } catch (err) {
-      console.error('Error adding property:', err);
+      clientError('Error adding property', err, { traceId });
       throw err;
     }
   };

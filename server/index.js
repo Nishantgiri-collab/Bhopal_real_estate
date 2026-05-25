@@ -12,8 +12,36 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+function logStep(req, message, details = {}) {
+  const requestId = req?.requestId || 'startup';
+  const suffix = Object.keys(details).length ? ` ${JSON.stringify(details)}` : '';
+  console.log(`[${new Date().toISOString()}] [${requestId}] ${message}${suffix}`);
+}
+
+function logError(req, message, err, details = {}) {
+  const requestId = req?.requestId || 'startup';
+  console.error(`[${new Date().toISOString()}] [${requestId}] ${message}`, {
+    ...details,
+    error: err?.message || err
+  });
+}
+
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
+app.use((req, res, next) => {
+  req.requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  logStep(req, 'Request started', { method: req.method, url: req.originalUrl });
+  res.on('finish', () => {
+    logStep(req, 'Request finished', {
+      method: req.method,
+      url: req.originalUrl,
+      statusCode: res.statusCode,
+      durationMs: Date.now() - startedAt
+    });
+  });
+  next();
+});
 
 // ─── Serve Frontend Build (React dist folder) ─────────────────────────────────
 const searchPaths = [
@@ -397,17 +425,25 @@ process.on('unhandledRejection', (reason, promise) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 app.get('/api/properties', (req, res) => {
+  logStep(req, 'Fetching properties');
   db.all('SELECT * FROM properties ORDER BY id DESC', [], (err, rows) => {
     if (err) {
-      console.error('Error fetching properties from SQLite:', err.message);
-      return res.status(500).json({ error: 'Database error' });
+      logError(req, 'Property fetch failed', err);
+      return res.status(500).json({ error: 'Database error', requestId: req.requestId });
     }
     const parsedListings = rows.map(row => parsePropertyRow(row));
+    logStep(req, 'Properties fetched', { count: parsedListings.length });
     res.json(parsedListings);
   });
 });
 
 app.post('/api/properties', (req, res) => {
+  logStep(req, 'Property create payload received', {
+    bodyBytes: JSON.stringify(req.body || {}).length,
+    title: req.body?.title,
+    imageCount: Array.isArray(req.body?.images) ? req.body.images.length : 0
+  });
+
   const {
     id, title, location, price, priceNumeric, beds, baths, sqft, type,
     isSold, isApproved, image, images, isAiMatch, matchScore, isLiked,
@@ -415,6 +451,19 @@ app.post('/api/properties', (req, res) => {
   } = req.body;
 
   const propId = id || Date.now();
+  const missingFields = ['title', 'location', 'price', 'type', 'ownerName', 'ownerPhone']
+    .filter((field) => !req.body?.[field]);
+
+  if (missingFields.length > 0) {
+    logStep(req, 'Property create validation failed', { missingFields, propId });
+    return res.status(400).json({
+      error: 'Missing required property fields',
+      missingFields,
+      requestId: req.requestId
+    });
+  }
+
+  logStep(req, 'Property create DB insert starting', { propId, title });
 
   db.run(`
     INSERT INTO properties (
@@ -429,11 +478,20 @@ app.post('/api/properties', (req, res) => {
     description, JSON.stringify(amenities || []), ownerName, ownerPhone, ownerEmail || '', videoUrl || '', listingType || ''
   ], function (err) {
     if (err) {
-      console.error('Error inserting property to SQLite:', err.message);
-      return res.status(500).json({ error: 'Failed to insert property' });
+      logError(req, 'Property create DB insert failed', err, { propId });
+      return res.status(500).json({ error: 'Failed to insert property', requestId: req.requestId });
     }
+    logStep(req, 'Property create DB insert complete', { propId, lastID: this?.lastID, changes: this?.changes });
     db.get('SELECT * FROM properties WHERE id = ?', [propId], (err, row) => {
-      if (err || !row) return res.status(500).json({ error: 'Failed to retrieve inserted property' });
+      if (err) {
+        logError(req, 'Property create lookup failed', err, { propId });
+        return res.status(500).json({ error: 'Failed to retrieve inserted property', requestId: req.requestId });
+      }
+      if (!row) {
+        logStep(req, 'Property create lookup returned no row', { propId });
+        return res.status(500).json({ error: 'Failed to retrieve inserted property', requestId: req.requestId });
+      }
+      logStep(req, 'Property create succeeded', { propId, title: row.title });
       res.status(201).json(parsePropertyRow(row));
     });
   });
