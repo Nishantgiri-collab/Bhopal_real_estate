@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const SimpleDB = require('./db'); // Use JSON-based database instead of sqlite3
 const twilio = require('twilio');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
@@ -24,20 +24,36 @@ if (fs.existsSync(frontendDistPath)) {
   console.warn(`⚠️  Frontend dist folder not found at: ${frontendDistPath}`);
 }
 
-// ─── SQLite Connection & Initialization ───────────────────────────────────────
+// ─── Database Connection & Initialization ───────────────────────────────────
 const dbPath = path.join(__dirname, 'data', 'realestate.db');
-if (!fs.existsSync(path.dirname(dbPath))) {
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-}
+const db = new SimpleDB(dbPath);
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('❌ SQLite connection error:', err.message);
-  } else {
-    console.log('✅ Connected to SQLite database:', dbPath);
-    initializeDatabase();
-  }
-});
+// Initialize database tables (JSON structure)
+function initializeDatabase() {
+  db.serialize(() => {
+    // Create properties table structure
+    db.run(`CREATE TABLE IF NOT EXISTS properties (
+      id INTEGER PRIMARY KEY,
+      title TEXT, location TEXT, price TEXT, priceNumeric INTEGER,
+      beds INTEGER, baths INTEGER, sqft INTEGER, type TEXT,
+      image TEXT, images TEXT, isSold INTEGER, isApproved INTEGER,
+      isAiMatch INTEGER, matchScore INTEGER, isLiked INTEGER,
+      description TEXT, amenities TEXT, ownerName TEXT, ownerPhone TEXT, videoUrl TEXT
+    )`, (err) => {
+      if (err) console.error('Properties table error:', err.message);
+      else console.log('✅ SQLite properties table ready');
+    });
+
+    // Create owner_requests table structure
+    db.run(`CREATE TABLE IF NOT EXISTS owner_requests (
+      id INTEGER PRIMARY KEY,
+      name TEXT, phone TEXT, propertyId INTEGER, status TEXT, date TEXT
+    )`, (err) => {
+      if (err) console.error('Owner requests table error:', err.message);
+      else console.log('✅ SQLite owner_requests table ready');
+    });
+  });
+}
 
 // Helper to parse SQLite property rows
 function parsePropertyRow(row) {
