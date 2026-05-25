@@ -1,0 +1,180 @@
+.ai-match-page {
+  padding: 4rem 2rem;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.wizard-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 3rem;
+  width: 100%;
+}
+
+.wizard-header {
+  margin-bottom: 2rem;
+}
+
+.wizard-header h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin-bottom: 3rem;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  transition: width 0.4s ease;
+}
+
+.step-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.option-card {
+  padding: 1.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  color: var(--color-text-primary);
+  font-size: 1.125rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.option-card:hover {
+  border-color: rgba(108, 92, 231, 0.5);
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.option-card.active {
+  border-color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.2);
+  box-shadow: var(--shadow-glow);
+}
+
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border);
+  padding-top: 2rem;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.inline-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+/* Analyzing State */
+.analyzing-state {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.loader-icon {
+  animation: spin 2s linear infinite;
+  margin-bottom: 2rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 768px) {
+  .wizard-container {
+    padding: 2rem 1.5rem;
+  }
+  
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+}
+
+/* Step indicator */
+.step-indicator {
+  text-align: center;
+  font-size: 0.85rem;
+  margin-top: -2rem;
+  margin-bottom: 2rem;
+}
+
+/* Disabled option card (max selections reached) */
+.option-card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Selection counter */
+.selection-count {
+  text-align: center;
+  font-size: 0.9rem;
+  margin-top: -1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Disabled button */
+.btn-disabled,
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  font-weight: 400;
+}

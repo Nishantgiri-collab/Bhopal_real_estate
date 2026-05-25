@@ -1,0 +1,19 @@
+{
+  "name": "bhopal-real-estate-server",
+  "version": "1.0.0",
+  "description": "Backend server for Bhopal Real Estate — properties, MongoDB leads, OTP verification",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "mongoose": "^8.4.0",
+    "nodemailer": "^6.9.13",
+    "sqlite3": "^6.0.1",
+    "twilio": "^5.1.0"
+  }
+}
