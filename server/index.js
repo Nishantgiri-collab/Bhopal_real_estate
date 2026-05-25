@@ -330,6 +330,28 @@ try {
   } else {
     console.warn('Gmail credentials not set - Email OTP is disabled until Gmail is configured');
   }
+  const logFile = path.join(__dirname, '..', 'server.log');
+function log(message) {
+  const line = `${new Date().toISOString()} - ${message}\n`;
+  try { fs.appendFileSync(logFile, line); } catch (_) {}
+}
+
+process.on('uncaughtException', (err) => {
+  console.error('🚨 Uncaught Exception:', err);
+  log(`Uncaught Exception: ${err.stack || err}`);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  log(`Unhandled Rejection: ${reason}`);
+});
+
+app.listen(PORT, () => {
+  console.log(`\n🚀 Bhopal Estates Server running on http://localhost:${PORT}`);
+  console.log(`   SQLite   → ${dbPath}`);
+  console.log(`   Twilio   → ${twilioClient ? 'Active' : 'Mock mode'}`);
+  console.log(`   Gmail    → ${mailTransporter ? 'Active' : 'Not configured'}\n`);
+  log('Server started successfully');
+});
 } catch (err) {
   console.error('❌ Nodemailer init error:', err.message);
 }
@@ -616,9 +638,14 @@ if (fs.existsSync(frontendDistPath)) {
 // START SERVER
 // ═══════════════════════════════════════════════════════════════════════════════
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Bhopal Estates Server running on http://localhost:${PORT}`);
-  console.log(`   SQLite   → ${dbPath}`);
-  console.log(`   Twilio   → ${twilioClient ? 'Active' : 'Mock mode'}`);
-  console.log(`   Gmail    → ${mailTransporter ? 'Active' : 'Not configured'}\n`);
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Global error handling to capture uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('🚨 Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
 });
