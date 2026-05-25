@@ -5,6 +5,7 @@ const PropertyContext = createContext();
 export const useProperties = () => useContext(PropertyContext);
 
 const API = '/api';
+const PROPERTY_REFRESH_INTERVAL_MS = 10000;
 
 const clientLog = (message, details = {}) => {
   console.log(`[property-client] ${message}`, details);
@@ -19,11 +20,13 @@ export const PropertyProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchProperties = useCallback(async () => {
-    setLoading(true);
+  const fetchProperties = useCallback(async ({ background = false } = {}) => {
+    if (!background) {
+      setLoading(true);
+    }
     setError('');
     try {
-      const res = await fetch(`${API}/properties`);
+      const res = await fetch(`${API}/properties`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setProperties(data);
@@ -35,12 +38,32 @@ export const PropertyProvider = ({ children }) => {
       setError('Cannot connect to the property API. Please make sure the server is running.');
       console.error('Error fetching properties:', err);
     } finally {
-      setLoading(false);
+      if (!background) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchProperties();
+  }, [fetchProperties]);
+
+  useEffect(() => {
+    const refreshInBackground = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProperties({ background: true });
+      }
+    };
+
+    const intervalId = window.setInterval(refreshInBackground, PROPERTY_REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refreshInBackground);
+    document.addEventListener('visibilitychange', refreshInBackground);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshInBackground);
+      document.removeEventListener('visibilitychange', refreshInBackground);
+    };
   }, [fetchProperties]);
 
   // Client-side image compression to downscale megapixel camera photos down to 800px max width JPEG (30-60KB)
