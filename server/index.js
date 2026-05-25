@@ -365,19 +365,8 @@ app.get('*', (req, res) => {
   }
 });
 
-// Export app for use in server.js
+// Export app - server.js will handle the listening
 module.exports = app;
-
-// Only listen if this file is run directly (not when required)
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`\n🚀 Bhopal Estates Server running on http://localhost:${PORT}`);
-    console.log(`   SQLite   → ${dbPath}`);
-    console.log(`   Twilio   → ${twilioClient ? 'Active' : 'Mock mode'}`);
-    console.log(`   Gmail    → ${mailTransporter ? 'Active' : 'Not configured'}\n`);
-    log('Server started successfully');
-  });
-}
 } catch (err) {
   console.error('❌ Nodemailer init error:', err.message);
 }
@@ -643,22 +632,6 @@ app.post('/api/verify-otp/email', (req, res) => {
     res.status(400).json({ success: false, error: result.reason });
   }
 });
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SERVE STATIC FILES (PRODUCTION)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const frontendDistPath = path.join(__dirname, '..', 'dist');
-if (fs.existsSync(frontendDistPath)) {
-  console.log(`📦 Serving static frontend files from: ${frontendDistPath}`);
-  app.use(express.static(frontendDistPath));
-  app.get('*', (req, res) => {
-    if (req.originalUrl.startsWith('/api')) {
-      return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
-  });
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // START SERVER
