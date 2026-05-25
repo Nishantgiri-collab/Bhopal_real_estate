@@ -49,6 +49,23 @@ export const PropertyProvider = ({ children }) => {
   }, [fetchProperties]);
 
   useEffect(() => {
+    if (!window.EventSource) return undefined;
+
+    const events = new EventSource(`${API}/properties/events`);
+    const refreshInBackground = () => fetchProperties({ background: true });
+
+    events.addEventListener('property-change', refreshInBackground);
+    events.onerror = () => {
+      events.close();
+    };
+
+    return () => {
+      events.removeEventListener('property-change', refreshInBackground);
+      events.close();
+    };
+  }, [fetchProperties]);
+
+  useEffect(() => {
     const refreshInBackground = () => {
       if (document.visibilityState === 'visible') {
         fetchProperties({ background: true });

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check, Search, SlidersHorizontal, X } from 'lucide-react';
 import Button from '../components/Button';
 import PropertyCard from '../components/PropertyCard';
@@ -31,6 +31,7 @@ const LOCALITIES = [
 
 const DEFAULT_BUDGET_MIN = 10;
 const DEFAULT_BUDGET_MAX = 500;
+const RECORDS_PER_PAGE = 12;
 
 const PropertyListing = () => {
   const [showFilters, setShowFilters] = useState(false);
@@ -41,6 +42,7 @@ const PropertyListing = () => {
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedListingTypes, setSelectedListingTypes] = useState([]);
   const [selectedLocalities, setSelectedLocalities] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const { properties } = useProperties();
 
@@ -83,11 +85,12 @@ const PropertyListing = () => {
     (budgetMax < DEFAULT_BUDGET_MAX ? 1 : 0) + (budgetMin > DEFAULT_BUDGET_MIN ? 1 : 0) +
     (searchQuery.trim() !== '' ? 1 : 0);
 
-  const filteredProperties = useMemo(() => {
-    return properties.filter(property => {
-      // Hide sold and unapproved properties from viewers
-      if (property.isSold || !property.isApproved) return false;
+  const publicProperties = useMemo(() => {
+    return properties.filter(property => property.isApproved && !property.isSold);
+  }, [properties]);
 
+  const filteredProperties = useMemo(() => {
+    return publicProperties.filter(property => {
       // Search filter
       const matchesSearch = !searchQuery.trim() ||
         property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,14 +116,35 @@ const PropertyListing = () => {
 
       return matchesSearch && matchesBhk && matchesType && matchesBudget && matchesLocality && (selectedListingTypes.length === 0 || selectedListingTypes.includes(property.listingType));
     });
-  }, [properties, searchQuery, selectedBhk, selectedTypes, selectedLocalities, selectedListingTypes, budgetMin, budgetMax]);
+  }, [publicProperties, searchQuery, selectedBhk, selectedTypes, selectedLocalities, selectedListingTypes, budgetMin, budgetMax]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProperties.length / RECORDS_PER_PAGE));
+  const paginatedProperties = useMemo(() => {
+    const startIndex = (currentPage - 1) * RECORDS_PER_PAGE;
+    return filteredProperties.slice(startIndex, startIndex + RECORDS_PER_PAGE);
+  }, [filteredProperties, currentPage]);
+  const firstVisibleRecord = filteredProperties.length === 0 ? 0 : ((currentPage - 1) * RECORDS_PER_PAGE) + 1;
+  const lastVisibleRecord = Math.min(currentPage * RECORDS_PER_PAGE, filteredProperties.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedBhk, selectedTypes, selectedLocalities, selectedListingTypes, budgetMin, budgetMax]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="listing-page container">
       <div className="listing-header">
         <div>
           <h1>Properties in <span className="gradient-text">Bhopal</span></h1>
-          <p className="text-secondary">Showing {filteredProperties.length} of {properties.length} results</p>
+          <p className="text-secondary">
+            Showing {firstVisibleRecord}-{lastVisibleRecord} of {filteredProperties.length} public results
+            {properties.length !== publicProperties.length && ` (${properties.length - publicProperties.length} pending or sold hidden)`}
+          </p>
         </div>
         <div className="listing-actions">
           <div className="search-bar glass-panel">
@@ -310,11 +334,46 @@ const PropertyListing = () => {
           )}
 
           {filteredProperties.length > 0 ? (
-            <div className="properties-grid">
-              {filteredProperties.map(property => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
+            <>
+              <div className="properties-grid">
+                {paginatedProperties.map(property => (
+                  <PropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="pagination-bar" aria-label="Properties pagination">
+                  <button
+                    className="pagination-btn"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+
+                  <div className="pagination-pages">
+                    {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                      <button
+                        key={page}
+                        className={`pagination-page ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => setCurrentPage(page)}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    className="pagination-btn"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="no-results glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
               <h3>No properties found</h3>

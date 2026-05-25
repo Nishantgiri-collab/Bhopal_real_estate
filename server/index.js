@@ -77,6 +77,19 @@ if (frontendDistPath) {
 // ─── Database Connection & Initialization ───────────────────────────────────
 const dbPath = path.join(__dirname, 'data', 'realestate.db');
 const db = new SimpleDB(dbPath);
+const propertyEventClients = new Set();
+
+function notifyPropertyChanged(action, propertyId) {
+  const event = `event: property-change\ndata: ${JSON.stringify({
+    action,
+    propertyId,
+    timestamp: new Date().toISOString()
+  })}\n\n`;
+
+  for (const client of propertyEventClients) {
+    client.write(event);
+  }
+}
 
 // Initialize database tables (JSON structure)
 function initializeDatabase() {
@@ -491,6 +504,23 @@ app.get('/api/properties', (req, res) => {
   });
 });
 
+app.get('/api/properties/events', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  res.flushHeaders?.();
+  res.write(': connected\n\n');
+
+  propertyEventClients.add(res);
+
+  req.on('close', () => {
+    propertyEventClients.delete(res);
+  });
+});
+
 app.post('/api/properties', (req, res) => {
   logStep(req, 'Property create payload received', {
     bodyBytes: JSON.stringify(req.body || {}).length,
@@ -546,6 +576,7 @@ app.post('/api/properties', (req, res) => {
         return res.status(500).json({ error: 'Failed to retrieve inserted property', requestId: req.requestId });
       }
       logStep(req, 'Property create succeeded', { propId, title: row.title });
+      notifyPropertyChanged('created', propId);
       res.status(201).json(parsePropertyRow(row));
     });
   });
@@ -583,6 +614,7 @@ app.patch('/api/properties/:id', (req, res) => {
     if (this.changes === 0) return res.status(404).json({ error: 'Not found' });
     db.get('SELECT * FROM properties WHERE id = ?', [id], (err, row) => {
       if (err || !row) return res.status(500).json({ error: 'Failed to retrieve updated property' });
+      notifyPropertyChanged('updated', id);
       res.json(parsePropertyRow(row));
     });
   });
@@ -596,6 +628,7 @@ app.delete('/api/properties/:id', (req, res) => {
       return res.status(500).json({ error: 'Failed to delete property' });
     }
     if (this.changes === 0) return res.status(404).json({ error: 'Not found' });
+    notifyPropertyChanged('deleted', id);
     res.status(204).send();
   });
 });
