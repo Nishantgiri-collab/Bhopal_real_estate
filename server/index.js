@@ -15,6 +15,15 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '5mb' }));
 
+// ─── Serve Frontend Build (React dist folder) ─────────────────────────────────
+const frontendDistPath = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  console.log(`✅ Frontend serving enabled from: ${frontendDistPath}`);
+} else {
+  console.warn(`⚠️  Frontend dist folder not found at: ${frontendDistPath}`);
+}
+
 // ─── SQLite Connection & Initialization ───────────────────────────────────────
 const dbPath = path.join(__dirname, 'data', 'realestate.db');
 if (!fs.existsSync(path.dirname(dbPath))) {
@@ -345,13 +354,30 @@ process.on('unhandledRejection', (reason, promise) => {
   log(`Unhandled Rejection: ${reason}`);
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Bhopal Estates Server running on http://localhost:${PORT}`);
-  console.log(`   SQLite   → ${dbPath}`);
-  console.log(`   Twilio   → ${twilioClient ? 'Active' : 'Mock mode'}`);
-  console.log(`   Gmail    → ${mailTransporter ? 'Active' : 'Not configured'}\n`);
-  log('Server started successfully');
+// ─── SPA Fallback Route ──────────────────────────────────────────────────────
+// Serve index.html for all unknown routes (for React Router)
+app.get('*', (req, res) => {
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
 });
+
+// Export app for use in server.js
+module.exports = app;
+
+// Only listen if this file is run directly (not when required)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Bhopal Estates Server running on http://localhost:${PORT}`);
+    console.log(`   SQLite   → ${dbPath}`);
+    console.log(`   Twilio   → ${twilioClient ? 'Active' : 'Mock mode'}`);
+    console.log(`   Gmail    → ${mailTransporter ? 'Active' : 'Not configured'}\n`);
+    log('Server started successfully');
+  });
+}
 } catch (err) {
   console.error('❌ Nodemailer init error:', err.message);
 }
