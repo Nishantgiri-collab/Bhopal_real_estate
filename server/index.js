@@ -310,6 +310,29 @@ function migrateProperties() {
   });
 }
 
+function seedPropertiesIfEmpty(done) {
+  db.get('SELECT COUNT(*) as count FROM properties', (countErr, row) => {
+    if (countErr) return done?.(countErr);
+    if (row.count > 0) return done?.();
+
+    const stmt = db.prepare(`
+      INSERT INTO properties (
+        id, title, location, price, priceNumeric, beds, baths, sqft, type,
+        isSold, isApproved, image, images, isAiMatch, matchScore, isLiked,
+        description, amenities, ownerName, ownerPhone, ownerEmail, videoUrl, listingType
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const p of INITIAL_PROPERTIES) {
+      stmt.run(
+        p.id, p.title, p.location, p.price, p.priceNumeric, p.beds, p.baths, p.sqft, p.type,
+        p.isSold, p.isApproved, p.image, p.images, p.isAiMatch, p.matchScore, p.isLiked,
+        p.description, p.amenities, p.ownerName, p.ownerPhone, p.ownerEmail || '', p.videoUrl || '', p.listingType || ''
+      );
+    }
+    stmt.finalize(done);
+  });
+}
+
 function migrateOwnerRequests() {
   db.get('SELECT COUNT(*) as count FROM owner_requests', (err, row) => {
     if (err) return console.error('Error checking owner_requests count:', err.message);
@@ -434,6 +457,27 @@ app.get('/api/properties', (req, res) => {
       return res.status(500).json({ error: 'Database error', requestId: req.requestId });
     }
     const parsedListings = rows.map(row => parsePropertyRow(row));
+    if (parsedListings.length === 0) {
+      logStep(req, 'No properties found, seeding fallback data');
+      return seedPropertiesIfEmpty((seedErr) => {
+        if (seedErr) {
+          logError(req, 'Property fallback seed failed', seedErr);
+          return res.status(500).json({ error: 'Database seed error', requestId: req.requestId });
+        }
+
+        db.all('SELECT * FROM properties ORDER BY id DESC', [], (retryErr, retryRows) => {
+          if (retryErr) {
+            logError(req, 'Property fetch after seed failed', retryErr);
+            return res.status(500).json({ error: 'Database error', requestId: req.requestId });
+          }
+
+          const seededListings = retryRows.map(row => parsePropertyRow(row));
+          logStep(req, 'Properties fetched after fallback seed', { count: seededListings.length });
+          res.json(seededListings);
+        });
+      });
+    }
+
     logStep(req, 'Properties fetched', { count: parsedListings.length });
     res.json(parsedListings);
   });

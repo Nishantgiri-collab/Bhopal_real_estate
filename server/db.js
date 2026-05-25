@@ -33,7 +33,7 @@ class SimpleDB {
     try {
       if (fs.existsSync(this.dataFile)) {
         const data = fs.readFileSync(this.dataFile, 'utf8');
-        const parsed = JSON.parse(data || '{"properties":[],"owner_requests":[]}');
+        const parsed = JSON.parse(data.replace(/^\uFEFF/, '') || '{"properties":[],"owner_requests":[]}');
         parsed.properties = Array.isArray(parsed.properties) ? parsed.properties : [];
         parsed.owner_requests = Array.isArray(parsed.owner_requests) ? parsed.owner_requests : [];
         dbLog('log', 'Data loaded', {
