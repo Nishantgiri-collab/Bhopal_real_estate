@@ -11,6 +11,42 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const SITE_URL = (process.env.SITE_URL || 'https://www.bhopalmycity.com').replace(/\/+$/, '');
+
+function buildAbsoluteUrl(pathname) {
+  const suffix = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  return `${SITE_URL}${suffix}`;
+}
+
+function generateSitemapXml(properties = []) {
+  const urls = [
+    { loc: buildAbsoluteUrl('/'), changefreq: 'daily', priority: '1.0' },
+    { loc: buildAbsoluteUrl('/properties'), changefreq: 'daily', priority: '0.9' },
+    { loc: buildAbsoluteUrl('/ai-match'), changefreq: 'weekly', priority: '0.8' },
+    { loc: buildAbsoluteUrl('/pricing'), changefreq: 'weekly', priority: '0.7' },
+    { loc: buildAbsoluteUrl('/add-property'), changefreq: 'weekly', priority: '0.7' }
+  ];
+
+  for (const property of properties) {
+    urls.push({
+      loc: buildAbsoluteUrl(`/property/${property.id}`),
+      changefreq: 'weekly',
+      priority: '0.8'
+    });
+  }
+
+  const urlEntries = urls.map((url) => {
+    return `  <url>\n    <loc>${url.loc}</loc>\n    <changefreq>${url.changefreq}</changefreq>\n    <priority>${url.priority}</priority>\n  </url>`;
+  }).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlEntries}\n</urlset>`;
+}
+
+function sendRobotsTxt(res) {
+  const sitemapUrl = buildAbsoluteUrl('/sitemap.xml');
+  res.type('text/plain');
+  res.send(`User-agent: *\nAllow: /\nSitemap: ${sitemapUrl}\n`);
+}
 
 function logStep(req, message, details = {}) {
   const requestId = req?.requestId || 'startup';
@@ -873,6 +909,22 @@ app.post('/api/verify-otp/email', (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // START SERVER
 // ═══════════════════════════════════════════════════════════════════════════════
+
+app.get('/sitemap.xml', (req, res) => {
+  db.all('SELECT id FROM properties WHERE isApproved = 1 ORDER BY id DESC', [], (err, rows) => {
+    if (err) {
+      console.error('Error generating sitemap:', err.message);
+      return res.status(500).send('Failed to generate sitemap');
+    }
+
+    const sitemap = generateSitemapXml(rows || []);
+    res.type('application/xml').send(sitemap);
+  });
+});
+
+app.get('/robots.txt', (req, res) => {
+  sendRobotsTxt(res);
+});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
