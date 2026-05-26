@@ -521,6 +521,76 @@ app.get('/api/properties/events', (req, res) => {
   });
 });
 
+const ADD_PROPERTY_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ADD_PROPERTY_PHONE_REGEX = /^[6-9]\d{9}$/;
+const ADD_PROPERTY_OWNER_NAME_REGEX = /^[A-Za-z\s]+$/;
+
+function isAllowedPropertyImage(value) {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  const imageValue = value.trim();
+  if (/^data:image\/(jpeg|png);base64,/i.test(imageValue)) return true;
+
+  try {
+    const url = new URL(imageValue);
+    return /\.(jpe?g|png)$/i.test(url.pathname);
+  } catch {
+    return /\.(jpe?g|png)$/i.test(imageValue.split('?')[0]);
+  }
+}
+
+function validateAddPropertyPayload(body = {}) {
+  const errors = {};
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  const description = typeof body.description === 'string' ? body.description.trim() : '';
+  const location = typeof body.location === 'string' ? body.location.trim() : '';
+  const ownerName = typeof body.ownerName === 'string' ? body.ownerName.trim() : '';
+  const ownerPhone = typeof body.ownerPhone === 'string' ? body.ownerPhone.trim() : '';
+  const ownerEmail = typeof body.ownerEmail === 'string' ? body.ownerEmail.trim() : '';
+  const priceNumeric = Number(body.priceNumeric);
+  const sqft = Number(body.sqft);
+  const beds = Number(body.beds);
+  const baths = Number(body.baths);
+  const images = Array.isArray(body.images) ? body.images : [];
+
+  if (!title) errors.title = 'Property title is required.';
+  else if (title.length < 5) errors.title = 'Property title must be at least 5 characters.';
+  if (!description) errors.description = 'Description is required.';
+  else if (description.length < 10) errors.description = 'Description must be at least 10 characters.';
+  if (!location) errors.location = 'Location/address is required.';
+  if (!body.price || !Number.isFinite(priceNumeric) || priceNumeric <= 0) errors.price = 'Price must be a positive number.';
+  if (!Number.isFinite(sqft) || sqft <= 100) errors.sqft = 'Area must be numeric and greater than 100 sq. ft.';
+  if (!Number.isInteger(beds) || beds < 0 || beds >= 10) errors.beds = 'Bedrooms must be an integer from 0 to 9.';
+  if (!Number.isInteger(baths) || baths < 0 || baths >= 10) errors.baths = 'Bathrooms must be an integer from 0 to 9.';
+  if (!ownerName) errors.ownerName = 'Owner name is required.';
+  else if (!ADD_PROPERTY_OWNER_NAME_REGEX.test(ownerName)) errors.ownerName = 'Owner name can contain alphabets and spaces only.';
+  if (!ownerPhone) errors.ownerPhone = 'Phone number is required.';
+  else if (!ADD_PROPERTY_PHONE_REGEX.test(ownerPhone)) errors.ownerPhone = 'Enter a valid 10-digit Indian mobile number.';
+  if (!ownerEmail) errors.ownerEmail = 'Email is required.';
+  else if (!ADD_PROPERTY_EMAIL_REGEX.test(ownerEmail)) errors.ownerEmail = 'Enter a valid email address.';
+  if (!body.type) errors.type = 'Property type is required.';
+  if (!body.listingType) errors.listingType = 'Listing type is required.';
+  if (images.length < 1) errors.images = 'At least 1 property image is required.';
+  else if (!images.every(isAllowedPropertyImage)) errors.images = 'Only JPG, JPEG, and PNG property images are allowed.';
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+    values: {
+      title,
+      description,
+      location,
+      ownerName,
+      ownerPhone,
+      ownerEmail,
+      priceNumeric,
+      sqft,
+      beds,
+      baths,
+      images
+    }
+  };
+}
+
 app.post('/api/properties', (req, res) => {
   logStep(req, 'Property create payload received', {
     bodyBytes: JSON.stringify(req.body || {}).length,
@@ -529,25 +599,26 @@ app.post('/api/properties', (req, res) => {
   });
 
   const {
-    id, title, location, price, priceNumeric, beds, baths, sqft, type,
-    isSold, isApproved, image, images, isAiMatch, matchScore, isLiked,
-    description, amenities, ownerName, ownerPhone, ownerEmail, videoUrl, listingType
+    id, price, type, isSold, isApproved, image, isAiMatch, matchScore, isLiked,
+    amenities, videoUrl, listingType
   } = req.body;
 
   const propId = id || Date.now();
-  const missingFields = ['title', 'location', 'price', 'type', 'ownerName', 'ownerPhone']
-    .filter((field) => !req.body?.[field]);
+  const validation = validateAddPropertyPayload(req.body);
 
-  if (missingFields.length > 0) {
-    logStep(req, 'Property create validation failed', { missingFields, propId });
+  if (!validation.isValid) {
+    logStep(req, 'Property create validation failed', { errors: validation.errors, propId });
     return res.status(400).json({
-      error: 'Missing required property fields',
-      missingFields,
+      error: 'Invalid property fields',
+      fields: validation.errors,
       requestId: req.requestId
     });
   }
 
-  logStep(req, 'Property create DB insert starting', { propId, title });
+  const sanitized = validation.values;
+  const primaryImage = isAllowedPropertyImage(image) ? image : sanitized.images[0];
+
+  logStep(req, 'Property create DB insert starting', { propId, title: sanitized.title });
 
   db.run(`
     INSERT INTO properties (
@@ -556,10 +627,10 @@ app.post('/api/properties', (req, res) => {
       description, amenities, ownerName, ownerPhone, ownerEmail, videoUrl, listingType
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
-    propId, title, location, price, priceNumeric, beds, baths, sqft, type,
-    isSold ? 1 : 0, isApproved ? 1 : 0, image, JSON.stringify(images || []),
+    propId, sanitized.title, sanitized.location, price, sanitized.priceNumeric, sanitized.beds, sanitized.baths, sanitized.sqft, type,
+    isSold ? 1 : 0, isApproved ? 1 : 0, primaryImage, JSON.stringify(sanitized.images),
     isAiMatch ? 1 : 0, matchScore, isLiked ? 1 : 0,
-    description, JSON.stringify(amenities || []), ownerName, ownerPhone, ownerEmail || '', videoUrl || '', listingType || ''
+    sanitized.description, JSON.stringify(amenities || []), sanitized.ownerName, sanitized.ownerPhone, sanitized.ownerEmail, videoUrl || '', listingType || ''
   ], function (err) {
     if (err) {
       logError(req, 'Property create DB insert failed', err, { propId });

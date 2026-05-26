@@ -65,6 +65,25 @@
   color: var(--color-text-secondary);
 }
 
+.field-error {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.image-error {
+  margin-top: 0.25rem;
+}
+
+.input-invalid {
+  border-color: var(--color-danger);
+}
+
+.input-invalid:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
 .amenity-input-wrapper {
   display: flex;
   gap: 1rem;

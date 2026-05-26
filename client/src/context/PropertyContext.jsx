@@ -155,12 +155,12 @@ export const PropertyProvider = ({ children }) => {
       }
     }
 
-    const primaryImage = persistentImages[0] || newProp.image || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+    const primaryImage = persistentImages[0] || newProp.image || '';
 
     const propertyWithId = {
       ...newProp,
       image: primaryImage,
-      images: persistentImages.length > 0 ? persistentImages : [primaryImage],
+      images: persistentImages.length > 0 ? persistentImages : (primaryImage ? [primaryImage] : []),
       id: Date.now(),
       isAiMatch: Math.random() > 0.5,
       matchScore: Math.floor(Math.random() * 20) + 80,
